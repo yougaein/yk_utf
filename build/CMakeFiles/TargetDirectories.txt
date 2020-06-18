@@ -1,0 +1,8 @@
+/home/yougain/gem_project/yk_utf/build/CMakeFiles/rebuild_cache.dir
+/home/yougain/gem_project/yk_utf/build/CMakeFiles/edit_cache.dir
+/home/yougain/gem_project/yk_utf/build/yk_utf_lib/CMakeFiles/rebuild_cache.dir
+/home/yougain/gem_project/yk_utf/build/yk_utf_lib/CMakeFiles/edit_cache.dir
+/home/yougain/gem_project/yk_utf/build/yk_utf_lib/CMakeFiles/ykUTF.dir
+/home/yougain/gem_project/yk_utf/build/test/CMakeFiles/rebuild_cache.dir
+/home/yougain/gem_project/yk_utf/build/test/CMakeFiles/edit_cache.dir
+/home/yougain/gem_project/yk_utf/build/test/CMakeFiles/test_utf_str.dir
