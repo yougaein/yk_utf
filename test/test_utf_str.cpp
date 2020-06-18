@@ -2,6 +2,7 @@
 #include <fstream>
 
 int main(int argc, char** argv){
+
     std::ifstream fi;
     fi.open("test.txt", std::ios::in);
     if(!fi)
