@@ -82,6 +82,7 @@ struct TTYStr{
     void push(char32_t cp, TTYAttr a){
         elems.emplace_back(Elem(cp, a));
     }
+    void push(std::string s, TTYAttr a);
     static void put_utf8(std::string& s, char32_t codepoint);
     std::string getStdStr(size_t paddingNum = 0);
     bool empty(){
@@ -113,16 +114,26 @@ struct UnicodeStr{
         std::string alt;
         size_t altTTYSize, ttyWidth;
         size_t ccSeqLeft, graphemeClusterLeft, graphemeClusterTTyWidthLeft, lineBreakClusterLeft, lineBreakClusterTTyWidthLeft;
+        bool isGraphemeBreakClusterEnd;
+        LBMode lineBreakMode;
         std::vector<NormCPElem> cannNormalized, compatNormalized;
-        void utf8_push_tty(TTYStr& ts, TTYAttr eAttr = TTYAttr()){
-            ts.push(codePoint, attr|eAttr);
+        void utf8_push_tty(TTYStr& ts, TTYAttr eAttr = TTYAttr())const{
+            std::cout << __LINE__ << std::endl << std::flush;
+            if(altTTYSize > 0)
+                ts.push(alt, attr|eAttr);
+            else
+                ts.push(codePoint, attr|eAttr);
+            std::cout << __LINE__ << std::endl << std::flush;
         }
         CPElem(char32_t cp, size_t start, size_t bsz, TTYAttr a, std::string as, size_t asz) :
-            codePoint(cp), bytePos(start), byteSize(bsz), attr(a), alt(as), altTTYSize(asz), ttyWidth(getTTYWidth(cp))
+            codePoint(cp), bytePos(start), byteSize(bsz), attr(a), alt(as), altTTYSize(asz), ttyWidth(getTTYWidth(cp)),
+            ccSeqLeft(0), graphemeClusterLeft(0), graphemeClusterTTyWidthLeft(0), lineBreakClusterLeft(0), lineBreakClusterTTyWidthLeft(0),
+            isGraphemeBreakClusterEnd(false), lineBreakMode(lbFalse)
         { }
-        CPElem(const CPElem& arg) : 
+        CPElem(const CPElem& arg) = default;/* : 
             codePoint(arg.codePoint), bytePos(arg.bytePos), byteSize(arg.byteSize), attr(arg.attr), alt(arg.alt), altTTYSize(arg.altTTYSize), ttyWidth(arg.ttyWidth)
-        { }
+        { }*/
+        CPElem() = delete;
     };
     std::vector<CPElem> cpList;
     struct {
@@ -145,6 +156,8 @@ struct UnicodeStr{
 
 template <class F>
 void UnicodeStr::eachLineWithMatch(size_t width, size_t tabSize, string_type regex, TTYAttr matchColor, F f){// f(const std::vector<terminal_str>& s)
+    if(width == 0 || tabSize == 0)
+        throw UnicodeStr::Error("width = 0 or tab size = 0");
     using namespace Yk::UTF;
     TTYStr out;
     size_t curPos = 0;
@@ -154,19 +167,24 @@ void UnicodeStr::eachLineWithMatch(size_t width, size_t tabSize, string_type reg
         regexMatch(regex, &matchList);
     std::vector<MatchResult>::iterator curMatch = matchList.begin();
     while(it != cpList.end()){
-        bool retried = false;
+        bool useGraphBreak = false; //line break or grapheme break
+    retry:
         size_t posMaybe = curPos;
         auto org = it;
-        do{
+        while(true){
             if(it->codePoint == U'\t'){
-                posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize - 1;
+                posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize;
             }else if(it->altTTYSize == 0){
                 posMaybe += it->ttyWidth;
             }else{
                 posMaybe += it->altTTYSize;
             }
+            if(it->clusterLeft(useGraphBreak) == 0)
+                break;
             ++it;
-        }while(it->lineBreakClusterLeft > 0);
+        }
+        ++it;
+        std::cout << "posMaybe = " << posMaybe << std::endl;
         if(posMaybe >= width){
 retry:
             if(!out.empty()){
@@ -176,61 +194,59 @@ retry:
                 it = org;
                 continue;
             }else{
-                if(!retried){
+                if(!useGraphBreak){
+                    useGraphBreak = true;
                     it = org;
-                    while(1){
-                        org = it;
-                        posMaybe = curPos;
-                        do{
-                            if(it->codePoint == U'\t'){
-                                posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize - 1;
-                            }else if(it->altTTYSize == 0){
-                                posMaybe += it->ttyWidth;
-                            }else{
-                                posMaybe += it->altTTYSize;
-                            }
-                            ++it;
-                        }while(it->graphemeClusterLeft > 0);
-                        if(posMaybe >= width){
-                            retried = true;
-                            goto retry;
-                        }else{
-                            auto jt = org;
-                            do{
-                                size_t pos = jt - cpList.begin();
-                                if(curMatch != matchList.end()){
-                                    jt->utf8_push_tty(out, (curMatch->start() <= pos && pos < curMatch->end()) ? matchColor : TTYAttr()); //consider altTTY
-                                    while(curMatch->end() <= pos - 1)
-                                        ++curMatch;
-                                }else
-                                    jt->utf8_push_tty(out); //consider altTTY
-                            }while(jt++ != it);
-                        }
-                    }
+                    goto retry;
                 }else{
-                    for(int i = 0 ; i < width ; ++i)
-                        out.push(0xfffe, TTYAttr());
+                    out.setStdStr(".", TTYAttr::reverse)
+                    f(out.getStdStr(width - curPos));
+                    out.clear();
+                    curPos = 0;
+                    it = org;
+                    continue;
                 }
             }
         }else{
             auto jt = org;
-            do{
+            posMaybe = curPos;
+            while(jt != it){
                 size_t pos = jt - cpList.begin();
-                if(curMatch != matchList.end()){
-                    jt->utf8_push_tty(out, (curMatch->start() <= pos && pos < curMatch->end()) ? matchColor : TTYAttr()); //consider altTTY
-                    while(curMatch->end() <= pos - 1)
+                TTYAttr tattr = (curMatch != matchList.end() && curMatch->start() <= pos && pos < curMatch->end()) ? matchColor : TTYAttr();
+                if(jt->codePoint == U'\t'){
+                    size_t prevPosMaybe = posMaybe;
+                    posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize;
+                    for(size_t i = prevPosMaybe ; i < posMaybe ;　++i)
+                        out.push(" ", tattr); //consider altTTY
+                }else if(jt->codePoint == U'\r' || jt->codePoint == U'\n'){
+                    ;
+                }else{
+                    jt->utf8_push_tty(out, tattr);
+                    if(jt->altTTYSize == 0)
+                        posMaybe += jt->ttyWidth;
+                    else
+                        posMaybe += jt->altTTYSize;
+                }
+                if(curMatch != matchList.end())
+                    while(curMatch->end() + 1 <= pos)
                         ++curMatch;
-                }else
-                    jt->utf8_push_tty(out); //consider altTTY
-            }while(jt++ != it);
+                ++jt;
+            }
+            if(it != cpList.begin() && (it - 1)->lineBreakMode == lbForce){
+                f(out.getStdStr(width - curPos)); // remove CR and LF, so empty string is allowed
+                out.clear();
+                curPos = 0;
+                it = org;
+                continue;
+            }else
+                curPos = posMaybe;
         }
-        ++it;
     }
     if(!out.empty())
         f(out.getStdStr(width - curPos));    
 }
 
-}
+} 
 }
 
 #endif

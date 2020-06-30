@@ -4,8 +4,102 @@
 #include "../include/lineBreakProperty.hpp"
 #include "../include/generalCategoryProperty.hpp"
 
+#define is_trail(c) (c > 0x7F && c < 0xC0)
+#define SUCCESS true
+#define FAILURE false
+
 namespace Yk{
 namespace UTF{
+
+//© Masaki Kagaya.
+char32_t nextCodePoint(const std::string& s, size_t *cursor)
+{
+    char32_t code_point;
+    const unsigned char *str = (const unsigned char *)s.c_str();
+    size_t str_size = s.size();
+    size_t pos = *cursor;
+    size_t rest_size = str_size - pos;
+    unsigned char c;
+    unsigned char min;
+    unsigned char max;
+
+    code_point = 0;
+
+    if (*cursor >= str_size) {
+        return 0xfffd;
+    }
+
+    c = str[pos];
+
+    if (rest_size < 1) {
+        code_point = -1;
+        pos += 1;
+    } else if (c < 0x80) {
+        code_point = str[pos];
+        pos += 1;
+    } else if (c < 0xC2) {
+        code_point = 0xfffd;
+        pos += 1;
+    } else if (c < 0xE0) {
+
+        if (rest_size < 2 || !is_trail(str[pos + 1])) {
+            code_point = 0xfffd;
+            pos += 1;
+        } else {
+            code_point = ((str[pos] & 0x1F) << 6) | (str[pos + 1] & 0x3F);
+            pos += 2;
+        }
+
+    } else if (c < 0xF0) {
+
+        min = (c == 0xE0) ? 0xA0 : 0x80;
+        max = (c == 0xED) ? 0x9F : 0xBF;
+
+        if (rest_size < 2 || str[pos + 1] < min || max < str[pos + 1]) {
+            code_point = 0xfffd;
+            pos += 1;         
+        } else if (rest_size < 3 || !is_trail(str[pos + 2])) {
+            code_point = 0xfffd;
+            pos += 2;
+        } else {
+            code_point = ((str[pos]     & 0x1F) << 12) 
+                       | ((str[pos + 1] & 0x3F) <<  6) 
+                       |  (str[pos + 2] & 0x3F);
+            pos += 3;
+        }
+
+    } else if (c < 0xF5) {
+
+        min = (c == 0xF0) ? 0x90 : 0x80;
+        max = (c == 0xF4) ? 0x8F : 0xBF;
+
+        if (rest_size < 2 || str[pos + 1] < min || max < str[pos + 1]) {
+            code_point = 0xfffd;
+            pos += 1;
+        } else if (rest_size < 3 || !is_trail(str[pos + 2])) {
+            code_point = 0xfffd;
+            pos += 2;
+        } else if (rest_size < 4 || !is_trail(str[pos + 3])) {
+            code_point = 0xfffd;
+            pos += 3;
+        } else {
+            code_point = ((str[pos]     &  0x7) << 18)
+                       | ((str[pos + 1] & 0x3F) << 12)
+                       | ((str[pos + 2] & 0x3F) << 6)
+                       |  (str[pos + 3] & 0x3F);
+            pos += 4;
+        }
+
+    } else {
+        code_point = 0xfffd;
+        pos += 1;
+    }
+
+    *cursor = pos;
+
+    return code_point;
+}
+
 
 std::string TTYAttr::operator-(const TTYAttr& arg)const{
     std::vector<int> args;
@@ -287,6 +381,13 @@ TTYAttr TTYAttr::operator|(const TTYAttr& arg)const{
 }
 
 
+void TTYStr::push(std::string s, TTYAttr a){
+    size_t cursor = 0;
+    while(s.size() > cursor)
+        elems.emplace_back(Elem(nextCodePoint(s, &cursor), a));
+}
+
+
 void TTYStr::put_utf8(std::string& s, char32_t codepoint){
     char c[] = {'\0', '\0', '\0', '\0', '\0'};
     if (codepoint <= 0x7f) {
@@ -344,7 +445,7 @@ bool UnicodeStr::regexMatch(const std::basic_string<char32_t>& regexpr, std::vec
                     toMatch->forRegexSearch.push_back(e.codePoint);
                     toMatch->forRegexSearchPos.push_back(curPos + e.orgPos);
                 }
-                it += it->ccSeqLeft - 1;
+                it += it->ccSeqLeft;
             }else{
                 toMatch->forRegexSearch.push_back(it->codePoint);
                 toMatch->forRegexSearchPos.push_back(curPos);
@@ -356,13 +457,12 @@ bool UnicodeStr::regexMatch(const std::basic_string<char32_t>& regexpr, std::vec
     size_t npos = 0;
     std::basic_string<char32_t>::iterator spos(toMatch->forRegexSearch.begin());
     while(boost::regex_search(spos, toMatch->forRegexSearch.end(), what, regex, flg) != 0){
+        size_t f = toMatch->forRegexSearchPos[what[0].first - toMatch->forRegexSearch.begin()],
+               s = toMatch->forRegexSearchPos[what[0].second - toMatch->forRegexSearch.begin()];
         if(what[0].matched){
-            MatchResult mr = {
-                what[0].matched, 
-                toMatch->forRegexSearchPos[what[0].first - toMatch->forRegexSearch.begin()], 
-                toMatch->forRegexSearchPos[what[0].second - toMatch->forRegexSearch.begin()]
-            };
+            MatchResult mr = { what[0].matched, f, s - f };
             mrList->emplace_back(mr);
+            spos = what[0].second;
         }
     }
     return !mrList->empty();
@@ -470,10 +570,10 @@ struct TmpParams{
     LineBreakProperty lastLbp, lastLbpX, specialSP;
     TmpParams(UnicodeStr* u) : cpList(u->cpList), lastIsExtPictExtend(false), lastIsFormatOrControl(true),
         prevCompatNormalizable(false), prevCannNormalizable(false), prevIsStartar(true), noLbpCheck(false),
-        graphemeLength(0), lineBreakLength(0), cpCount(0),
+        graphemeLength(0), lineBreakLength(0), cpCount(0), ccSeqLength(0),
         lastGbp(gbNil), lastLbp(lbNil), lastLbpX(lbNil), specialSP(lbNil) {}
     void add(char32_t cp, size_t start, size_t bsz, const TTYAttr& attr, std::string alt = "", size_t altTTYSize = 0){
-    std::cout << __LINE__ << std::endl;
+    std::cout << ccSeqLength << std::endl;
         GraphemeBreakProperty gbp = getGraphemeBreakProperty(cp);
     std::cout << __LINE__ << std::endl;
         LineBreakProperty lbp = getLineBreakProperty(cp);
@@ -543,8 +643,8 @@ struct TmpParams{
                     lastIsExtPictExtend = false;
                 }
             }
-
             if(!lastIsExtPictExtend && graphemeBreakPropertyCompList[lastGbp][gbp]){
+                cpList.back().isGraphemeBreakClusterEnd = true;
                 std::vector<UnicodeStr::CPElem>::iterator st = cpList.end() - graphemeLength, it;
                 size_t w = 0;
                 for(it = st ; it != cpList.end() ; ++it){
@@ -552,12 +652,12 @@ struct TmpParams{
                     w += it->ttyWidth;
                 }
                 for(it = st ; it != cpList.end() ; ++it){
-                    it->graphemeClusterTTyWidthLeft = w;
                     w -= it->ttyWidth;
+                    it->graphemeClusterTTyWidthLeft = w;
                 }
             }
 
-            if(!noLbpCheck && lineBreakPropertyCompList[lastLbp][lbp] != lbFalse){
+            if(!noLbpCheck && (cpList.back().lineBreakMode = lineBreakPropertyCompList[lastLbp][lbp]) != lbFalse){
                 std::vector<UnicodeStr::CPElem>::iterator st = cpList.end() - lineBreakLength, it;
                 size_t w = 0;
                 for(it = st ; it != cpList.end() ; ++it){
@@ -565,8 +665,8 @@ struct TmpParams{
                     w += it->ttyWidth;
                 }
                 for(it = st ; it != cpList.end() ; ++it){
-                    it->lineBreakClusterTTyWidthLeft = w;
                     w -= it->ttyWidth;
+                    it->lineBreakClusterTTyWidthLeft = w;
                 }
             }
 
@@ -617,8 +717,8 @@ struct TmpParams{
             w += it->ttyWidth;
         }
         for(it = st; it != cpList.end() ; ++it){
-            it->graphemeClusterTTyWidthLeft = w;
             w -= it->ttyWidth;
+            it->graphemeClusterTTyWidthLeft = w;
         }
         w = 0;
         st = cpList.end() - lineBreakLength;
@@ -627,8 +727,8 @@ struct TmpParams{
             w += it->ttyWidth;
         }
         for(st = it; it != cpList.end() ; ++it){
-            it->lineBreakClusterTTyWidthLeft = w;
             w -= it->ttyWidth;
+            it->lineBreakClusterTTyWidthLeft = w;
         }
         st = cpList.end() - ccSeqLength;
         for(it = st; it != cpList.end() ; ++it)
@@ -643,101 +743,6 @@ struct TmpParams{
         }
     }
 };
-
-
-#define is_trail(c) (c > 0x7F && c < 0xC0)
-#define SUCCESS true
-#define FAILURE false
-
-//© Masaki Kagaya.
-char32_t nextCodePoint(const std::string& s, size_t *cursor)
-{
-    char32_t code_point;
-    const unsigned char *str = (const unsigned char *)s.c_str();
-    size_t str_size = s.size();
-    size_t pos = *cursor;
-    size_t rest_size = str_size - pos;
-    unsigned char c;
-    unsigned char min;
-    unsigned char max;
-
-    code_point = 0;
-
-    if (*cursor >= str_size) {
-        return 0xfffd;
-    }
-
-    c = str[pos];
-
-    if (rest_size < 1) {
-        code_point = -1;
-        pos += 1;
-    } else if (c < 0x80) {
-        code_point = str[pos];
-        pos += 1;
-    } else if (c < 0xC2) {
-        code_point = 0xfffd;
-        pos += 1;
-    } else if (c < 0xE0) {
-
-        if (rest_size < 2 || !is_trail(str[pos + 1])) {
-            code_point = 0xfffd;
-            pos += 1;
-        } else {
-            code_point = ((str[pos] & 0x1F) << 6) | (str[pos + 1] & 0x3F);
-            pos += 2;
-        }
-
-    } else if (c < 0xF0) {
-
-        min = (c == 0xE0) ? 0xA0 : 0x80;
-        max = (c == 0xED) ? 0x9F : 0xBF;
-
-        if (rest_size < 2 || str[pos + 1] < min || max < str[pos + 1]) {
-            code_point = 0xfffd;
-            pos += 1;         
-        } else if (rest_size < 3 || !is_trail(str[pos + 2])) {
-            code_point = 0xfffd;
-            pos += 2;
-        } else {
-            code_point = ((str[pos]     & 0x1F) << 12) 
-                       | ((str[pos + 1] & 0x3F) <<  6) 
-                       |  (str[pos + 2] & 0x3F);
-            pos += 3;
-        }
-
-    } else if (c < 0xF5) {
-
-        min = (c == 0xF0) ? 0x90 : 0x80;
-        max = (c == 0xF4) ? 0x8F : 0xBF;
-
-        if (rest_size < 2 || str[pos + 1] < min || max < str[pos + 1]) {
-            code_point = 0xfffd;
-            pos += 1;
-        } else if (rest_size < 3 || !is_trail(str[pos + 2])) {
-            code_point = 0xfffd;
-            pos += 2;
-        } else if (rest_size < 4 || !is_trail(str[pos + 3])) {
-            code_point = 0xfffd;
-            pos += 3;
-        } else {
-            code_point = ((str[pos]     &  0x7) << 18)
-                       | ((str[pos + 1] & 0x3F) << 12)
-                       | ((str[pos + 2] & 0x3F) << 6)
-                       |  (str[pos + 3] & 0x3F);
-            pos += 4;
-        }
-
-    } else {
-        code_point = 0xfffd;
-        pos += 1;
-    }
-
-    *cursor = pos;
-
-    return code_point;
-}
-
 
 
 UnicodeStr::UnicodeStr(std::string s) : 
@@ -841,6 +846,10 @@ else_label:
     }
     t.setLastParam();
     //createNormalized();
+}
+
+void UnicodeStr::CPElem::utf8_push_tty2(TTYStr& ts, TTYAttr eAttr){
+    std::cout << __LINE__ << std::endl << std::flush;
 }
 
 
