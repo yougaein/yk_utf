@@ -42,7 +42,6 @@ CType yk_lookup_classname(const char32_t* p1, const char32_t* p2){
             for(const char32_t* p = p1 ; p != p2 ; ++p)
                 if(d.name[p - p1] != *p)
                     goto brk;
-            printf("%d:%d hit %#x\n", i, d.size, *p1);
             return d.mask;
         }
 brk:

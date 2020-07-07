@@ -107,24 +107,24 @@ std::string TTYAttr::operator-(const TTYAttr& arg)const{
         args.push_back(fgColorArg + fgColor);
     if(bgColor != arg.bgColor && bgColor != -1)
         args.push_back(bgColorArg + bgColor);
-    if(blink != arg.blink)
-        args.push_back((!blink ? cancelArg : 0) +  blinkArg);
-    if(underline != arg.underline)
-        args.push_back((!underline ? cancelArg : 0) +  underlineArg);
-    if(italic != arg.italic)
-        args.push_back((!italic ? cancelArg : 0) +  italicArg);
-    if(bold != arg.bold)
-        args.push_back((!bold ? cancelArg : 0) +  boldArg);
-    if(shallow != arg.shallow)
-        args.push_back((!shallow ? cancelArg : 0) +  shallowArg);
-    if(fastBlink != arg.fastBlink)
-        args.push_back((!fastBlink ? cancelArg : 0) +  fastBlinkArg);
-    if(hide != arg.hide)
-        args.push_back((!hide ? cancelArg : 0) +  hideArg);
-    if(strike != arg.strike)
-        args.push_back((!strike ? cancelArg : 0) +  strikeArg);
-    if(reverse != arg.reverse)
-        args.push_back((!reverse ? cancelArg : 0) +  reverseArg);
+    if(_blink != arg._blink)
+        args.push_back((!_blink ? cancelArg : 0) +  blinkArg);
+    if(_underline != arg._underline)
+        args.push_back((!_underline ? cancelArg : 0) +  underlineArg);
+    if(_italic != arg._italic)
+        args.push_back((!_italic ? cancelArg : 0) +  italicArg);
+    if(_bold != arg._bold)
+        args.push_back((!_bold ? cancelArg : 0) +  boldArg);
+    if(_shallow != arg._shallow)
+        args.push_back((!_shallow ? cancelArg : 0) +  shallowArg);
+    if(_fastBlink != arg._fastBlink)
+        args.push_back((!_fastBlink ? cancelArg : 0) +  fastBlinkArg);
+    if(_hide != arg._hide)
+        args.push_back((!_hide ? cancelArg : 0) +  hideArg);
+    if(_strike != arg._strike)
+        args.push_back((!_strike ? cancelArg : 0) +  strikeArg);
+    if(_reverse != arg._reverse)
+        args.push_back((!_reverse ? cancelArg : 0) +  reverseArg);
     std::string ret("\x1b[");
     bool first = true;
     for(int n : args){
@@ -145,15 +145,15 @@ std::string TTYAttr::operator-(const TTYAttr& arg)const{
 void TTYAttr::clear(){
     bgColor = colDefault;
     fgColor = colDefault;
-    bold = false;
-    shallow = false;
-    italic = false;
-    underline = false;
-    blink = false;
-    fastBlink = false;
-    reverse = false;
-    hide = false;
-    strike = false;
+    _bold = false;
+    _shallow = false;
+    _italic = false;
+    _underline = false;
+    _blink = false;
+    _fastBlink = false;
+    _reverse = false;
+    _hide = false;
+    _strike = false;
 }
 
 
@@ -164,58 +164,58 @@ void TTYAttr::setArg(const std::vector<int>& args){
             clear();
             break;
         case 1:
-            bold = true;
+            _bold = true;
             break;
         case 2:
-            shallow = true;
+            _shallow = true;
             break;
         case 3:
-            italic = true;
+            _italic = true;
             break;
         case 4:
-            underline = true;
+            _underline = true;
             break;
         case 5:
-            blink = true;
+            _blink = true;
             break;
         case 6:
-            fastBlink = true;
+            _fastBlink = true;
             break;
         case 7:
-            reverse = true;
+            _reverse = true;
             break;
         case 8:
-            hide = true;
+            _hide = true;
             break;
         case 9:
-            strike = true;
+            _strike = true;
             break;
         case 21:
-            bold = false;
+            _bold = false;
             break;
         case 22:
-            shallow = false;
+            _shallow = false;
             break;
         case 23:
-            italic = false;
+            _italic = false;
             break;
         case 24:
-            underline = false;
+            _underline = false;
             break;
         case 25:
-            blink = false;
+            _blink = false;
             break;
         case 26:
-            fastBlink = false;
+            _fastBlink = false;
             break;
         case 27:
-            reverse = false;
+            _reverse = false;
             break;
         case 28:
-            hide = false;
+            _hide = false;
             break;
         case 29:
-            strike = false;
+            _strike = false;
             break;
         case 30:
             fgColor = colBlack;
@@ -278,9 +278,9 @@ void TTYAttr::setArg(const std::vector<int>& args){
 
 TTYAttr::TTYAttr(const std::vector<int>&& args) : 
     fgColor(-1), bgColor(-1),
-    blink(false), underline(false), italic(false),
-    bold(false), shallow(false), fastBlink(false), 
-    hide(false), strike(false), reverse(false)
+    _blink(false), _underline(false), _italic(false),
+    _bold(false), _shallow(false), _fastBlink(false), 
+    _hide(false), _strike(false), _reverse(false)
 
 {
     setArg(args);
@@ -289,36 +289,45 @@ TTYAttr::TTYAttr(const std::vector<int>&& args) :
 
 TTYAttr::TTYAttr() : 
     fgColor(-1), bgColor(-1),
-    blink(false), underline(false), italic(false),
-    bold(false), shallow(false), fastBlink(false), 
-    hide(false), strike(false), reverse(false)
+    _blink(false), _underline(false), _italic(false),
+    _bold(false), _shallow(false), _fastBlink(false), 
+    _hide(false), _strike(false), _reverse(false)
 {
 }
 
 
 TTYAttr::TTYAttr(int f, int b) : 
     fgColor(f), bgColor(b),
-    blink(false), underline(false), italic(false),
-    bold(false), shallow(false), fastBlink(false), 
-    hide(false), strike(false), reverse(false)
+    _blink(false), _underline(false), _italic(false),
+    _bold(false), _shallow(false), _fastBlink(false), 
+    _hide(false), _strike(false), _reverse(false)
+{
+}
+
+
+TTYAttr::TTYAttr(int f, int b, bool __blink, bool __underline, bool __italic, bool __bold, bool __shallow, bool __fastBlink, bool __hide, bool __strike, bool __reverse) : 
+    fgColor(f), bgColor(b),
+    _blink(__blink), _underline(__underline), _italic(__italic),
+    _bold(__bold), _shallow(__shallow), _fastBlink(__fastBlink), 
+    _hide(__hide), _strike(__strike), _reverse(__reverse)
 {
 }
 
 
 TTYAttr::TTYAttr(const TTYAttr& arg) : 
     fgColor(arg.fgColor), bgColor(arg.bgColor),
-    blink(arg.blink), underline(arg.underline), italic(arg.italic),
-    bold(arg.bold), shallow(arg.shallow), fastBlink(arg.fastBlink), 
-    hide(arg.hide), strike(arg.strike), reverse(arg.reverse)
+    _blink(arg._blink), _underline(arg._underline), _italic(arg._italic),
+    _bold(arg._bold), _shallow(arg._shallow), _fastBlink(arg._fastBlink), 
+    _hide(arg._hide), _strike(arg._strike), _reverse(arg._reverse)
 {
 }
 
 
 TTYAttr& TTYAttr::operator=(const TTYAttr& arg){
     fgColor = arg.fgColor; bgColor = arg.bgColor;
-    blink = arg.blink; underline = arg.underline; italic = arg.italic;
-    bold = arg.bold; shallow = arg.shallow; fastBlink = arg.fastBlink; 
-    hide = arg.hide; strike = arg.strike; reverse = arg.reverse;
+    _blink = arg._blink; _underline = arg._underline; _italic = arg._italic;
+    _bold = arg._bold; _shallow = arg._shallow; _fastBlink = arg._fastBlink; 
+    _hide = arg._hide; _strike = arg._strike; _reverse = arg._reverse;
     return *this;
 }
 
@@ -341,19 +350,30 @@ const TTYAttr TTYAttr::bgCyan(-1, colCyan);
 const TTYAttr TTYAttr::bgWhite(-1, colWhite);
 const TTYAttr TTYAttr::bgDefault(-1, colDefault);
 
+
+const TTYAttr TTYAttr::blink(-1, -1, true, false, false, false, false, false, false, false, false);
+const TTYAttr TTYAttr::underline(-1, -1, false, true, false, false, false, false, false, false, false);
+const TTYAttr TTYAttr::italic(-1, -1, false, false, true, false, false, false, false, false, false);
+const TTYAttr TTYAttr::bold(-1, -1, false, false, false, true, false, false, false, false, false);
+const TTYAttr TTYAttr::shallow(-1, -1, false, false, false, false, true, false, false, false, false);
+const TTYAttr TTYAttr::fastBlink(-1, -1, false, false, false, false, false, true, false, false, false);
+const TTYAttr TTYAttr::hide(-1, -1, false, false, false, false, false, false, true, false, false);
+const TTYAttr TTYAttr::strike(-1, -1, false, false, false, false, false, false, false, true, false);
+const TTYAttr TTYAttr::reverse(-1, -1, false, false, false, false, false, false, false, false, true);
+
 bool TTYAttr::operator!=(const TTYAttr& arg)const{
     return fgColor != arg.fgColor || bgColor != arg.bgColor ||
-        blink != arg.blink || underline != arg.underline || italic != arg.italic ||
-        bold != arg.bold || shallow != arg.shallow || fastBlink != arg.fastBlink ||
-        hide != arg.hide || strike != arg.strike || reverse != arg.reverse;
+        _blink != arg._blink || _underline != arg._underline || _italic != arg._italic ||
+        _bold != arg._bold || _shallow != arg._shallow || _fastBlink != arg._fastBlink ||
+        _hide != arg._hide || _strike != arg._strike || _reverse != arg._reverse;
 }
 
 
 bool TTYAttr::operator==(const TTYAttr& arg)const{
     return fgColor == arg.fgColor && bgColor == arg.bgColor &&
-        blink == arg.blink && underline == arg.underline && italic == arg.italic &&
-        bold == arg.bold && shallow == arg.shallow && fastBlink == arg.fastBlink &&
-        hide == arg.hide && strike == arg.strike && reverse == arg.reverse;
+        _blink == arg._blink && _underline == arg._underline && _italic == arg._italic &&
+        _bold == arg._bold && _shallow == arg._shallow && _fastBlink == arg._fastBlink &&
+        _hide == arg._hide && _strike == arg._strike && _reverse == arg._reverse;
 }
 
 
@@ -367,16 +387,16 @@ TTYAttr TTYAttr::operator|(const TTYAttr& arg)const{
         ret.bgColor = arg.bgColor;
     else
         ret.bgColor = bgColor;
-    ret.blink = blink | arg.blink;
-    ret.underline = underline | arg.underline;
-    ret.italic = italic | arg.italic;
-    ret.blink = blink | arg.blink;
-    ret.bold = bold| arg.bold;
-    ret.shallow = shallow | arg.shallow;
-    ret.fastBlink = fastBlink | arg.fastBlink;
-    ret.hide = hide | arg.hide;
-    ret.strike = strike | arg.strike;
-    ret.reverse = reverse | arg.reverse;
+    ret._blink = _blink | arg._blink;
+    ret._underline = _underline | arg._underline;
+    ret._italic = _italic | arg._italic;
+    ret._blink = _blink | arg._blink;
+    ret._bold = _bold| arg._bold;
+    ret._shallow = _shallow | arg._shallow;
+    ret._fastBlink = _fastBlink | arg._fastBlink;
+    ret._hide = _hide | arg._hide;
+    ret._strike = _strike | arg._strike;
+    ret._reverse = _reverse | arg._reverse;
     return ret;
 }
 
@@ -434,31 +454,56 @@ std::string TTYStr::getStdStr(size_t paddingNum){
 }
 
 
-bool UnicodeStr::regexMatch(const std::basic_string<char32_t>& regexpr, std::vector<MatchResult>* mrList, boost::match_flag_type flg, bool isCompat)const{
-    auto* toMatch = !isCompat ? &const_cast<UnicodeStr*>(this)->canon : &const_cast<UnicodeStr*>(this)->compat;
+bool UnicodeStr::hasRegexMatch(const std::basic_string<char32_t>& regexpr, boost::match_flag_type flg, bool isCompat)const{
+    ToMatch* toMatch = getToMatch(isCompat);
+    Regex regex(regexpr); // 正規表現
+    boost::match_results<std::basic_string<char32_t>::iterator> what;
+    size_t npos = 0;
+    std::basic_string<char32_t>::iterator spos(toMatch->forRegexSearch.begin());
+    return boost::regex_search(spos, toMatch->forRegexSearch.end(), what, regex, flg) != 0;
+}
+
+UnicodeStr::ToMatch* UnicodeStr::getToMatch(bool isCompat)const{
+    ToMatch* toMatch = !isCompat ? &const_cast<UnicodeStr*>(this)->canon : &const_cast<UnicodeStr*>(this)->compat;
     int curPos = 0;
     if(toMatch->forRegexSearch.empty())
         for(auto it = cpList.begin() ; it != cpList.end() ; ++it, ++curPos){
             auto& normalized = !isCompat ? it->cannNormalized : it->compatNormalized;
             if(!normalized.empty()){
+                bool first = true;
                 for(auto& e : normalized){
                     toMatch->forRegexSearch.push_back(e.codePoint);
-                    toMatch->forRegexSearchPos.push_back(curPos + e.orgPos);
+                    auto eIt = it + e.orgPos;
+                    toMatch->forRegexSearchPosBegin.push_back((eIt - eIt->graphemeClusterIndex) - cpList.begin());
+                    if(first){
+                        toMatch->forRegexSearchPosEnd.push_back(toMatch->forRegexSearchPosBegin.back());
+                        first = false;
+                    }else
+                        toMatch->forRegexSearchPosEnd.push_back(it + it->ccSeqLeft + 1 - cpList.begin());
                 }
                 it += it->ccSeqLeft;
             }else{
                 toMatch->forRegexSearch.push_back(it->codePoint);
-                toMatch->forRegexSearchPos.push_back(curPos);
+                toMatch->forRegexSearchPosBegin.push_back((it - it->graphemeClusterIndex) - cpList.begin());
+                if(it->graphemeClusterIndex == 0)
+                    toMatch->forRegexSearchPosEnd.push_back(it - cpList.begin());
+                else
+                    toMatch->forRegexSearchPosEnd.push_back((it + it->graphemeClusterLeft + 1) - cpList.begin());
             }
         }
+    return toMatch;
+}
+
+bool UnicodeStr::regexMatch(const std::basic_string<char32_t>& regexpr, std::vector<MatchResult>* mrList, boost::match_flag_type flg, bool isCompat)const{
+    ToMatch* toMatch = getToMatch(isCompat);
     Regex regex(regexpr); // 正規表現
 
     boost::match_results<std::basic_string<char32_t>::iterator> what;
     size_t npos = 0;
     std::basic_string<char32_t>::iterator spos(toMatch->forRegexSearch.begin());
     while(boost::regex_search(spos, toMatch->forRegexSearch.end(), what, regex, flg) != 0){
-        size_t f = toMatch->forRegexSearchPos[what[0].first - toMatch->forRegexSearch.begin()],
-               s = toMatch->forRegexSearchPos[what[0].second - toMatch->forRegexSearch.begin()];
+        size_t f = toMatch->forRegexSearchPosBegin[what[0].first - toMatch->forRegexSearch.begin()],
+               s = toMatch->forRegexSearchPosEnd[what[0].second - toMatch->forRegexSearch.begin()];
         if(what[0].matched){
             MatchResult mr = { what[0].matched, f, s - f };
             mrList->emplace_back(mr);
@@ -573,20 +618,15 @@ struct TmpParams{
         graphemeLength(0), lineBreakLength(0), cpCount(0), ccSeqLength(0),
         lastGbp(gbNil), lastLbp(lbNil), lastLbpX(lbNil), specialSP(lbNil) {}
     void add(char32_t cp, size_t start, size_t bsz, const TTYAttr& attr, std::string alt = "", size_t altTTYSize = 0){
-    std::cout << ccSeqLength << std::endl;
         GraphemeBreakProperty gbp = getGraphemeBreakProperty(cp);
-    std::cout << __LINE__ << std::endl;
         LineBreakProperty lbp = getLineBreakProperty(cp);
-    std::cout << __LINE__ << std::endl;
         size_t ccc = getCanonicalCombiningClass(cp);
-    std::cout << __LINE__ << std::endl;
         bool isStarter = ccc == 0 || lastIsFormatOrControl/* initial : true */;
 
         if((cpList.size() == 0 || lastGbp != gbRegional_Indicator_First) && gbp == gbRegional_Indicator){
             gbp = gbRegional_Indicator_First;
             lbp = lbRI_first;
         }
-    std::cout << __LINE__ << std::endl;
         if(lbp == lbSP){
             if(specialSP == lbNil){
                 switch(lastLbp){
@@ -684,7 +724,7 @@ struct TmpParams{
                 }
             }
         }
-        cpList.push_back(UnicodeStr::CPElem(cp, start, bsz, attr, alt, altTTYSize));
+        cpList.push_back(UnicodeStr::CPElem(cp, start, bsz, attr, alt, altTTYSize, graphemeLength));
         if((lastIsExtPictExtend && gbp == gbExtend) || gbp == gbExtended_Pictographic)
             lastIsExtPictExtend = true;
         else
@@ -722,11 +762,11 @@ struct TmpParams{
         }
         w = 0;
         st = cpList.end() - lineBreakLength;
-        for(st = it; it != cpList.end() ; ++it){
+        for(it = st; it != cpList.end() ; ++it){
             it->lineBreakClusterLeft = --lineBreakLength;
             w += it->ttyWidth;
         }
-        for(st = it; it != cpList.end() ; ++it){
+        for(it = st; it != cpList.end() ; ++it){
             w -= it->ttyWidth;
             it->lineBreakClusterTTyWidthLeft = w;
         }
@@ -748,20 +788,15 @@ struct TmpParams{
 UnicodeStr::UnicodeStr(std::string s) : 
     orgStr(s)
 {
-    std::cout << __LINE__ << std::endl;
     TmpParams t(this);
-    std::cout << __LINE__ << std::endl;
     TTYAttr attr;
-    std::cout << __LINE__ << std::endl;
     size_t i = 0, ei;
     size_t prev_i;
     while(true){
         if(i >=  orgStr.size())
             break;
         prev_i = i;
-    std::cout << __LINE__ << std::endl;
         char32_t cp = nextCodePoint(orgStr, &i);
-    std::cout << __LINE__ << std::endl;
         switch(cp){
         case 0x0a: //LF
         case 0x0d: //CR
@@ -772,9 +807,7 @@ UnicodeStr::UnicodeStr(std::string s) :
             if(i >=  orgStr.size())
                 goto control_label;
             ei = i;
-    std::cout << __LINE__ << std::endl;
             cp = nextCodePoint(orgStr, &i);
-    std::cout << __LINE__ << std::endl;
             if(cp == '['){
                 if(i >=  orgStr.size()){
                     i = ei;
@@ -835,11 +868,23 @@ control_label:
                 altStr[3] = '>';
                 altStr[4] = '\0';
                 TTYAttr a(attr);
-                a.reverse = ~a.reverse;
+                a._reverse = ~a._reverse;
                 t.add(cp, i, i - prev_i, a, altStr, 4);
+            }else if(cp == 0xfffd){
+                char altStr[8];
+                altStr[0] = '<';
+                altStr[1] = 'E';
+                altStr[2] = 'R';
+                altStr[3] = 'R';
+                altStr[4] = 'O';
+                altStr[5] = 'R';
+                altStr[6] = '>';
+                altStr[7] = '\0';
+                TTYAttr a(attr);
+                a._reverse = ~a._reverse;
+                t.add(cp, i, i - prev_i, a, altStr, 7);
             }else{
 else_label:
-    std::cout << __LINE__ << std::endl;
                 t.add(cp, i, i - prev_i, attr);
             }
         }
@@ -848,9 +893,6 @@ else_label:
     //createNormalized();
 }
 
-void UnicodeStr::CPElem::utf8_push_tty2(TTYStr& ts, TTYAttr eAttr){
-    std::cout << __LINE__ << std::endl << std::flush;
-}
 
 
 }

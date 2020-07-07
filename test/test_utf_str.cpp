@@ -3,7 +3,6 @@
 
 struct Func{
     void operator()(std::string tout){
-        std::cout << "string is" << std::endl;
         std::cout << tout;
         std::cout << std::endl;
     }
@@ -21,10 +20,12 @@ int main(int argc, char** argv){
     // read by line
 
         std::getline(fi, buff);
-        std::cout << buff << std::endl;
         Yk::UTF::UnicodeStr us(buff);
-        std::cout << std::endl;
-        us.eachLineWithMatch(11, 8, U"n.*関.*か", Yk::UTF::TTYAttr::bgCyan | Yk::UTF::TTYAttr::fgBlack, /*[](std::string tout){
+        std::cout << buff << std::endl;
+        std::cout << us.lineCount(25, 8) << std::endl;
+//        us.eachLineWithMatch(2, 8, "n.*?関.*?が", Yk::UTF::TTYAttr::bgCyan | Yk::UTF::TTYAttr::fgBlack, /*[](std::string tout){
+        us.eachLineWithMatch(25, 8, "T.*か", Yk::UTF::TTYAttr::bgCyan | Yk::UTF::TTYAttr::fgBlack, /*[](std::string tout){
+//        us.eachLineWithMatch(200, 8, "n.*?関", Yk::UTF::TTYAttr::bgCyan | Yk::UTF::TTYAttr::fgBlack, /*[](std::string tout){
             std::cout << "string is" << std::endl;
             std::cout << tout;
             std::cout << std::endl;

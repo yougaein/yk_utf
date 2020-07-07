@@ -4,6 +4,7 @@
 #include "graphemeProperty.hpp"
 #include "regex_utf.hpp"
 #include "ttyWidth.hpp"
+#include "lineBreakProperty.hpp"
 
 namespace Yk{
 namespace UTF{
@@ -32,21 +33,22 @@ struct TTYAttr{
     static constexpr int colCyan= 6;
     static constexpr int colWhite= 7;
     static constexpr int colDefault = 9;
-    bool bold : 1;//1
-    bool shallow : 1;//2
-    bool italic : 1;//3
-    bool underline : 1;//4
-    bool blink : 1;//5
-    bool fastBlink : 1; //6
-    bool reverse : 1;//7
-    bool hide : 1;//8
-    bool strike : 1;//9
+    bool _bold : 1;//1
+    bool _shallow : 1;//2
+    bool _italic : 1;//3
+    bool _underline : 1;//4
+    bool _blink : 1;//5
+    bool _fastBlink : 1; //6
+    bool _reverse : 1;//7
+    bool _hide : 1;//8
+    bool _strike : 1;//9
     std::string operator-(const TTYAttr& arg)const;
     void clear();
     void setArg(const std::vector<int>& args);
     TTYAttr(const std::vector<int>&& args);
     TTYAttr();
     TTYAttr(int, int);
+    TTYAttr(int, int, bool, bool, bool, bool, bool, bool, bool, bool, bool);
     TTYAttr(const TTYAttr& arg);
     TTYAttr& operator=(const TTYAttr& arg);
     bool operator!=(const TTYAttr& arg)const;
@@ -70,6 +72,15 @@ struct TTYAttr{
     static const TTYAttr bgCyan;
     static const TTYAttr bgWhite;
     static const TTYAttr bgDefault;
+    static const TTYAttr bold;
+    static const TTYAttr shallow;
+    static const TTYAttr italic;
+    static const TTYAttr underline;
+    static const TTYAttr blink;
+    static const TTYAttr fastBlink;
+    static const TTYAttr reverse;
+    static const TTYAttr hide;
+    static const TTYAttr strike;
 };
 
 struct TTYStr{
@@ -78,31 +89,49 @@ struct TTYStr{
         TTYAttr attr;
         Elem(char32_t c, TTYAttr a) : cp(c), attr(a) {}
     };
+    TTYStr() : notEmpty(false){ }
     std::vector<Elem>elems;
+    bool notEmpty;
     void push(char32_t cp, TTYAttr a){
         elems.emplace_back(Elem(cp, a));
+    }
+    void pushEmpty(){
+        notEmpty = true;
     }
     void push(std::string s, TTYAttr a);
     static void put_utf8(std::string& s, char32_t codepoint);
     std::string getStdStr(size_t paddingNum = 0);
-    bool empty(){
-        return elems.empty();
+    bool empty()const{
+        return elems.empty() && !notEmpty;
     }
     void clear(){
+        notEmpty = false;
         elems.clear();
+    }
+    static std::string utf8(char32_t codepoint){
+        std::string s;
+        put_utf8(s, codepoint);
+        return s;
     }
 };
 
+
+
 struct UnicodeStr{
+    struct Error{
+        std::string msg;
+        Error(std::string err) : msg(err){ }
+    };
     static TTYAttr matchColor;
     std::string orgStr;//UTF-8
     typedef std::basic_string<char32_t> string_type;
     template <class F>
-    void eachLineWithMatch(size_t width, size_t tabSize, string_type regex, TTYAttr matchColor, F f); // f(const std::vector<terminal_str>& s)
+    void eachLineWithMatch(size_t width, size_t tabSize, std::string regex, TTYAttr matchColor, F f)const; // f(const std::vector<terminal_str>& s)
     template <class F>
-    void eachLine(size_t width, size_t tabSize, F f){
+    void eachLine(size_t width, size_t tabSize, F f)const{
         eachLineWithMatch(width, tabSize, U"", matchColor, f);
     };// f(const std::vector<terminal_str>& s)
+    size_t lineCount(size_t width, size_t tabSize)const;
     struct NormCPElem{
         char32_t codePoint;
         size_t orgPos;
@@ -113,32 +142,37 @@ struct UnicodeStr{
         TTYAttr attr;
         std::string alt;
         size_t altTTYSize, ttyWidth;
-        size_t ccSeqLeft, graphemeClusterLeft, graphemeClusterTTyWidthLeft, lineBreakClusterLeft, lineBreakClusterTTyWidthLeft;
+        size_t ccSeqLeft, graphemeClusterLeft, graphemeClusterIndex, graphemeClusterTTyWidthLeft, lineBreakClusterLeft, lineBreakClusterTTyWidthLeft;
         bool isGraphemeBreakClusterEnd;
         LBMode lineBreakMode;
         std::vector<NormCPElem> cannNormalized, compatNormalized;
         void utf8_push_tty(TTYStr& ts, TTYAttr eAttr = TTYAttr())const{
-            std::cout << __LINE__ << std::endl << std::flush;
             if(altTTYSize > 0)
                 ts.push(alt, attr|eAttr);
             else
                 ts.push(codePoint, attr|eAttr);
-            std::cout << __LINE__ << std::endl << std::flush;
         }
-        CPElem(char32_t cp, size_t start, size_t bsz, TTYAttr a, std::string as, size_t asz) :
+        CPElem(char32_t cp, size_t start, size_t bsz, TTYAttr a, std::string as, size_t asz, size_t gi) :
             codePoint(cp), bytePos(start), byteSize(bsz), attr(a), alt(as), altTTYSize(asz), ttyWidth(getTTYWidth(cp)),
-            ccSeqLeft(0), graphemeClusterLeft(0), graphemeClusterTTyWidthLeft(0), lineBreakClusterLeft(0), lineBreakClusterTTyWidthLeft(0),
+            ccSeqLeft(0), graphemeClusterLeft(0), graphemeClusterIndex(gi), graphemeClusterTTyWidthLeft(0), lineBreakClusterLeft(0), lineBreakClusterTTyWidthLeft(0),
             isGraphemeBreakClusterEnd(false), lineBreakMode(lbFalse)
         { }
         CPElem(const CPElem& arg) = default;/* : 
             codePoint(arg.codePoint), bytePos(arg.bytePos), byteSize(arg.byteSize), attr(arg.attr), alt(arg.alt), altTTYSize(arg.altTTYSize), ttyWidth(arg.ttyWidth)
         { }*/
         CPElem() = delete;
+        size_t clusterLeft(bool useGrapheme)const{
+            if(useGrapheme)
+                return graphemeClusterLeft;
+            else
+                return lineBreakClusterLeft;
+        }
     };
     std::vector<CPElem> cpList;
-    struct {
+    struct ToMatch{
         std::basic_string<char32_t> forRegexSearch;
-        std::vector<size_t> forRegexSearchPos;
+        std::vector<size_t> forRegexSearchPosBegin;
+        std::vector<size_t> forRegexSearchPosEnd;
     } canon, compat;
     struct MatchResult{
         bool matched;
@@ -147,15 +181,113 @@ struct UnicodeStr{
         size_t end(){ return pos + length; }
     };
     bool regexMatch(const std::basic_string<char32_t>& regexpr, std::vector<MatchResult>* mrList, boost::match_flag_type flg = boost::match_default, bool isCompat = false)const;
+    bool hasRegexMatch(const std::basic_string<char32_t>& regexpr, boost::match_flag_type flg = boost::match_default, bool isCompat = false)const;
+    ToMatch* getToMatch(bool isCompat = false)const;
     static void pushDecomped(char32_t codePoint, std::vector<NormCPElem>& list, size_t pos, bool isCompat);
     static std::vector<NormCPElem> getDecomped(std::vector<CPElem>::iterator bg, std::vector<CPElem>::iterator ed, bool isCompat);
     static std::vector<NormCPElem> getNormalized(std::vector<CPElem>::iterator bg, std::vector<CPElem>::iterator ed, bool isCompat);
     UnicodeStr(std::string s);
+    std::basic_string<char32_t> getCanUTF32()const{
+        std::basic_string<char32_t> ret;
+        auto it = cpList.begin();
+        while(it != cpList.end()){
+            if(!it->cannNormalized.empty()){
+                for(auto e : it->cannNormalized)
+                    ret.push_back(e.codePoint);
+                it += it->ccSeqLeft;
+                ++it;
+                continue;
+            }else
+                ret.push_back(it->codePoint);
+            ++it;
+        }
+        return std::move(ret);
+    }
 };
 
 
+size_t UnicodeStr::lineCount(size_t width, size_t tabSize)const{// f(const std::vector<terminal_str>& s)
+    if(width == 0 || tabSize == 0)
+        throw UnicodeStr::Error("width = 0 or tab size = 0");
+    size_t curPos = 0, lc = 0;
+    bool isEmpty = true;
+    auto it = cpList.begin();
+    while(it != cpList.end()){
+        bool useGraphBreak = false; //line break or grapheme break
+    retry:
+        size_t posMaybe = curPos;
+        auto org = it;
+        while(true){
+            if(it->codePoint == U'\t'){
+                posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize;
+            }else if(it->altTTYSize == 0){
+                posMaybe += it->ttyWidth;
+            }else{
+                posMaybe += it->altTTYSize;
+            }
+            if(it->clusterLeft(useGraphBreak) == 0)
+                break;
+            ++it;
+        }
+        ++it;
+        if(posMaybe > width){
+            if(!isEmpty){
+                ++lc;
+                curPos = 0;
+                isEmpty = true;
+                it = org;
+                continue;
+            }else{
+                if(!useGraphBreak){
+                    useGraphBreak = true;
+                    it = org;
+                    goto retry;
+                }else{
+                    ++lc;
+                    curPos = 0;
+                    isEmpty = true;
+                    continue;
+                }
+            }
+        }else{
+            auto jt = org;
+            posMaybe = curPos;
+            while(jt != it){
+                size_t pos = jt - cpList.begin();
+                if(jt->codePoint == U'\t'){
+                    size_t prevPosMaybe = posMaybe;
+                    posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize;
+                }else if(jt->codePoint == U'\r' || jt->codePoint == U'\n' || jt->codePoint == U'\x85'){
+                    ;
+                }else{
+                    if(jt->altTTYSize == 0)
+                        posMaybe += jt->ttyWidth;
+                    else
+                        posMaybe += jt->altTTYSize;
+                }
+                ++jt;
+            }
+            if(it != cpList.begin() && (it - 1)->lineBreakMode == lbForce){
+                ++lc;
+                curPos = 0;
+                isEmpty = true;
+                it = org;
+                continue;
+            }else{
+                isEmpty = false;
+                curPos = posMaybe;
+            }
+        }
+    }
+    if(!isEmpty)
+        ++lc;
+    return lc;
+}
+
+
 template <class F>
-void UnicodeStr::eachLineWithMatch(size_t width, size_t tabSize, string_type regex, TTYAttr matchColor, F f){// f(const std::vector<terminal_str>& s)
+void UnicodeStr::eachLineWithMatch(size_t width, size_t tabSize, std::string regex_s, TTYAttr matchColor, F f)const{// f(const std::vector<terminal_str>& s)
+    UnicodeStr regex(regex_s);
     if(width == 0 || tabSize == 0)
         throw UnicodeStr::Error("width = 0 or tab size = 0");
     using namespace Yk::UTF;
@@ -163,8 +295,9 @@ void UnicodeStr::eachLineWithMatch(size_t width, size_t tabSize, string_type reg
     size_t curPos = 0;
     auto it = cpList.begin();
     std::vector<MatchResult> matchList;
-    if(!regex.empty())
-        regexMatch(regex, &matchList);
+    if(!regex_s.empty()){
+        regexMatch(regex.getCanUTF32(), &matchList);
+    }
     std::vector<MatchResult>::iterator curMatch = matchList.begin();
     while(it != cpList.end()){
         bool useGraphBreak = false; //line break or grapheme break
@@ -184,9 +317,7 @@ void UnicodeStr::eachLineWithMatch(size_t width, size_t tabSize, string_type reg
             ++it;
         }
         ++it;
-        std::cout << "posMaybe = " << posMaybe << std::endl;
-        if(posMaybe >= width){
-retry:
+        if(posMaybe > width){
             if(!out.empty()){
                 f(out.getStdStr(width - curPos));
                 out.clear();
@@ -199,11 +330,10 @@ retry:
                     it = org;
                     goto retry;
                 }else{
-                    out.setStdStr(".", TTYAttr::reverse)
+                    out.push(".", TTYAttr::reverse);
                     f(out.getStdStr(width - curPos));
                     out.clear();
                     curPos = 0;
-                    it = org;
                     continue;
                 }
             }
@@ -212,24 +342,26 @@ retry:
             posMaybe = curPos;
             while(jt != it){
                 size_t pos = jt - cpList.begin();
-                TTYAttr tattr = (curMatch != matchList.end() && curMatch->start() <= pos && pos < curMatch->end()) ? matchColor : TTYAttr();
+                bool mc = false;
+                TTYAttr tattr = (mc = curMatch != matchList.end() && curMatch->start() <= pos && pos < curMatch->end()) ? matchColor : TTYAttr();
                 if(jt->codePoint == U'\t'){
                     size_t prevPosMaybe = posMaybe;
                     posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize;
-                    for(size_t i = prevPosMaybe ; i < posMaybe ;　++i)
+                    for(size_t i = prevPosMaybe ; i < posMaybe ; ++i)
                         out.push(" ", tattr); //consider altTTY
-                }else if(jt->codePoint == U'\r' || jt->codePoint == U'\n'){
-                    ;
+                }else if(jt->codePoint == U'\r' || jt->codePoint == U'\n' || jt->codePoint == U'\x85'){
+                    out.pushEmpty();
                 }else{
+                    std::string s;
+                    TTYStr::put_utf8(s, jt->codePoint);
                     jt->utf8_push_tty(out, tattr);
                     if(jt->altTTYSize == 0)
                         posMaybe += jt->ttyWidth;
                     else
                         posMaybe += jt->altTTYSize;
                 }
-                if(curMatch != matchList.end())
-                    while(curMatch->end() + 1 <= pos)
-                        ++curMatch;
+                while(curMatch != matchList.end() && curMatch->end() + 1 <= pos)
+                    ++curMatch;
                 ++jt;
             }
             if(it != cpList.begin() && (it - 1)->lineBreakMode == lbForce){
