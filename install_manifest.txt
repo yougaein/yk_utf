@@ -1,0 +1,2 @@
+/usr/local/lib/libykUTF.so.0.1.0
+/usr/local/lib/libykUTF.so

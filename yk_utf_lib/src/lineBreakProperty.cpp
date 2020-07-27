@@ -1,4 +1,4 @@
-#include "../include/lineBreakProperty.hpp"
+#include <Yk/utf/lineBreakProperty.hpp>
 #include <vector>
 #include <algorithm>
 

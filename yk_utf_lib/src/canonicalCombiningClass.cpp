@@ -1,4 +1,4 @@
-#include "../include/canonicalCombiningClass.hpp"
+#include <Yk/utf/canonicalCombiningClass.hpp>
 #include <vector>
 #include <algorithm>
 

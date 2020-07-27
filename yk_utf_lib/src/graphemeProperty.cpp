@@ -1,5 +1,5 @@
 
-#include "../include/graphemeProperty.hpp"
+#include <Yk/utf/graphemeProperty.hpp>
 #include <vector>
 #include <algorithm>
 

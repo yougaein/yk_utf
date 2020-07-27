@@ -1,8 +1,8 @@
-#include "../include/unicodeStr.hpp"
-#include "../include/canonicalCombiningClass.hpp"
-#include "../include/decompData.hpp"
-#include "../include/lineBreakProperty.hpp"
-#include "../include/generalCategoryProperty.hpp"
+#include <Yk/utf/unicodeStr.hpp>
+#include <Yk/utf/canonicalCombiningClass.hpp>
+#include <Yk/utf/decompData.hpp>
+#include <Yk/utf/lineBreakProperty.hpp>
+#include <Yk/utf/generalCategoryProperty.hpp>
 
 #define is_trail(c) (c > 0x7F && c < 0xC0)
 #define SUCCESS true
@@ -323,6 +323,29 @@ TTYAttr::TTYAttr(const TTYAttr& arg) :
 }
 
 
+TTYAttr::TTYAttr(unsigned int arg) {
+    size_t fc = arg & ((1 << 5) - 1);
+    if(1 <= fc && fc <= i_fgDefault)
+        fgColor = fc - 1;
+    else
+        fgColor = -1;
+    size_t bc = (arg & ((1 << 5) - 1) << 5) >> 5;
+    if(1 <= bc && bc <= i_fgDefault)
+        bgColor = bc - 1;
+    else
+        bgColor = -1;
+    _bold = (arg & i_bold) ? 1 : 0;
+    _shallow = (arg & i_shallow) ? 1 : 0;
+    _italic = (arg & i_italic) ? 1 : 0;
+    _underline = (arg & i_underline) ? 1 : 0;
+    _blink = (arg & i_blink) ? 1 : 0;
+    _fastBlink = (arg & i_fastBlink) ? 1 : 0;
+    _reverse = (arg & i_reverse) ? 1 : 0;
+    _hide = (arg & i_hide) ? 1 : 0;
+    _strike = (arg & i_strike) ? 1 : 0;
+}
+
+
 TTYAttr& TTYAttr::operator=(const TTYAttr& arg){
     fgColor = arg.fgColor; bgColor = arg.bgColor;
     _blink = arg._blink; _underline = arg._underline; _italic = arg._italic;
@@ -453,6 +476,14 @@ std::string TTYStr::getStdStr(size_t paddingNum){
     return out;
 }
 
+
+std::basic_string<char32_t> UnicodeStr::to_U(std::string s){
+    std::basic_string<char32_t> ret;
+    size_t cursor = 0;
+    while(s.size() > cursor)
+        ret.push_back(nextCodePoint(s, &cursor));
+    return std::move(ret);
+}
 
 bool UnicodeStr::hasRegexMatch(const std::basic_string<char32_t>& regexpr, boost::match_flag_type flg, bool isCompat)const{
     ToMatch* toMatch = getToMatch(isCompat);
@@ -893,6 +924,83 @@ else_label:
     //createNormalized();
 }
 
+
+size_t UnicodeStr::lineCount(size_t width, size_t tabSize)const{// f(const std::vector<terminal_str>& s)
+		if(width == 0 || tabSize == 0)
+				throw UnicodeStr::Error("width = 0 or tab size = 0");
+		size_t curPos = 0, lc = 0;
+		bool isEmpty = true;
+		auto it = cpList.begin();
+		while(it != cpList.end()){
+				bool useGraphBreak = false; //line break or grapheme break
+		retry:
+				size_t posMaybe = curPos;
+				auto org = it;
+				while(true){
+						if(it->codePoint == U'\t'){
+								posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize;
+						}else if(it->altTTYSize == 0){
+								posMaybe += it->ttyWidth;
+						}else{
+								posMaybe += it->altTTYSize;
+						}
+						if(it->clusterLeft(useGraphBreak) == 0)
+								break;
+						++it;
+				}
+				++it;
+				if(posMaybe > width){
+						if(!isEmpty){
+								++lc;
+								curPos = 0;
+								isEmpty = true;
+								it = org;
+								continue;
+						}else{
+								if(!useGraphBreak){
+										useGraphBreak = true;
+										it = org;
+										goto retry;
+								}else{
+										++lc;
+										curPos = 0;
+										isEmpty = true;
+										continue;
+								}
+						}
+				}else{
+						auto jt = org;
+						posMaybe = curPos;
+						while(jt != it){
+								size_t pos = jt - cpList.begin();
+								if(jt->codePoint == U'\t'){
+										size_t prevPosMaybe = posMaybe;
+										posMaybe = ((posMaybe + 1) / tabSize + 1) * tabSize;
+								}else if(jt->codePoint == U'\r' || jt->codePoint == U'\n' || jt->codePoint == U'\x85'){
+										;
+								}else{
+										if(jt->altTTYSize == 0)
+												posMaybe += jt->ttyWidth;
+										else
+												posMaybe += jt->altTTYSize;
+								}
+								++jt;
+						}
+						if(it != cpList.begin() && (it - 1)->lineBreakMode == lbForce){
+								++lc;
+								curPos = 0;
+								isEmpty = true;
+								continue;
+						}else{
+								isEmpty = false;
+								curPos = posMaybe;
+						}
+				}
+		}
+		if(!isEmpty)
+				++lc;
+		return lc;
+}
 
 
 }

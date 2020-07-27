@@ -1,4 +1,4 @@
-#include "../include/ttyWidth.hpp"
+#include <Yk/utf/ttyWidth.hpp>
 
 #include <vector>
 #include <iostream>

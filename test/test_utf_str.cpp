@@ -1,4 +1,4 @@
-#include "../yk_utf_lib/include/unicodeStr.hpp"
+#include <Yk/utf/unicodeStr.hpp>
 #include <fstream>
 
 struct Func{
@@ -23,6 +23,7 @@ int main(int argc, char** argv){
         Yk::UTF::UnicodeStr us(buff);
         std::cout << buff << std::endl;
         std::cout << us.lineCount(25, 8) << std::endl;
+				
 //        us.eachLineWithMatch(2, 8, "n.*?関.*?が", Yk::UTF::TTYAttr::bgCyan | Yk::UTF::TTYAttr::fgBlack, /*[](std::string tout){
         us.eachLineWithMatch(25, 8, "T.*か", Yk::UTF::TTYAttr::bgCyan | Yk::UTF::TTYAttr::fgBlack, /*[](std::string tout){
 //        us.eachLineWithMatch(200, 8, "n.*?関", Yk::UTF::TTYAttr::bgCyan | Yk::UTF::TTYAttr::fgBlack, /*[](std::string tout){

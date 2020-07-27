@@ -1,0 +1,95 @@
+have_library: checking for -lstdc++... -------------------- yes
+
+"gcc -std=gnu99 -o conftest -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0/x86_64-linux -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0/ruby/backward -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0 -I. -I/usr/local/share/rbenv/versions/2.7.1/include    -O3 -ggdb3 -Wall -Wextra -Wdeprecated-declarations -Wimplicit-function-declaration -Wimplicit-int -Wpointer-arith -Wwrite-strings -Wmissing-noreturn -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wsuggest-attribute=format -Wsuggest-attribute=noreturn -Wunused-variable  -fPIC conftest.c  -L. -L/usr/local/share/rbenv/versions/2.7.1/lib -Wl,-rpath,/usr/local/share/rbenv/versions/2.7.1/lib -L/usr/local/lib -Wl,-rpath,/usr/local/lib -L. -L/usr/local/share/rbenv/versions/2.7.1/lib  -fstack-protector-strong -rdynamic -Wl,-export-dynamic     -Wl,-rpath,/usr/local/share/rbenv/versions/2.7.1/lib -L/usr/local/share/rbenv/versions/2.7.1/lib -lruby  -lm   -lc"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: int main(int argc, char **argv)
+4: {
+5:   return !!argv[argc];
+6: }
+/* end */
+
+"gcc -std=gnu99 -o conftest -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0/x86_64-linux -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0/ruby/backward -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0 -I. -I/usr/local/share/rbenv/versions/2.7.1/include    -O3 -ggdb3 -Wall -Wextra -Wdeprecated-declarations -Wimplicit-function-declaration -Wimplicit-int -Wpointer-arith -Wwrite-strings -Wmissing-noreturn -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wsuggest-attribute=format -Wsuggest-attribute=noreturn -Wunused-variable  -fPIC conftest.c  -L. -L/usr/local/share/rbenv/versions/2.7.1/lib -Wl,-rpath,/usr/local/share/rbenv/versions/2.7.1/lib -L/usr/local/lib -Wl,-rpath,/usr/local/lib -L. -L/usr/local/share/rbenv/versions/2.7.1/lib  -fstack-protector-strong -rdynamic -Wl,-export-dynamic     -Wl,-rpath,/usr/local/share/rbenv/versions/2.7.1/lib -L/usr/local/share/rbenv/versions/2.7.1/lib -lruby -lstdc++  -lm   -lc"
+checked program was:
+/* begin */
+ 1: #include "ruby.h"
+ 2: 
+ 3: /*top*/
+ 4: extern int t(void);
+ 5: int main(int argc, char **argv)
+ 6: {
+ 7:   if (argc > 1000000) {
+ 8:     int (* volatile tp)(void)=(int (*)(void))&t;
+ 9:     printf("%d", (*tp)());
+10:   }
+11: 
+12:   return !!argv[argc];
+13: }
+14: 
+15: int t(void) { ; return 0; }
+/* end */
+
+--------------------
+
+have_library: checking for -lykUTF... -------------------- no
+
+"gcc -std=gnu99 -o conftest -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0/x86_64-linux -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0/ruby/backward -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0 -I. -I/usr/local/share/rbenv/versions/2.7.1/include    -O3 -ggdb3 -Wall -Wextra -Wdeprecated-declarations -Wimplicit-function-declaration -Wimplicit-int -Wpointer-arith -Wwrite-strings -Wmissing-noreturn -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wsuggest-attribute=format -Wsuggest-attribute=noreturn -Wunused-variable  -fPIC conftest.c  -L. -L/usr/local/share/rbenv/versions/2.7.1/lib -Wl,-rpath,/usr/local/share/rbenv/versions/2.7.1/lib -L/usr/local/lib -Wl,-rpath,/usr/local/lib -L. -L/usr/local/share/rbenv/versions/2.7.1/lib  -fstack-protector-strong -rdynamic -Wl,-export-dynamic    -lstdc++  -Wl,-rpath,/usr/local/share/rbenv/versions/2.7.1/lib -L/usr/local/share/rbenv/versions/2.7.1/lib -lruby -lykUTF -lstdc++  -lm   -lc"
+/usr/local/lib/libykUTF.so: undefined reference to `boost::regex_error::regex_error(std::string const&, boost::regex_constants::error_type, long)'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::re_detail::raw_storage::insert(unsigned long, unsigned long)'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::re_detail::is_combining_implementation(unsigned short)'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::re_detail::get_mem_block()'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::re_detail::get_default_error_string(boost::regex_constants::error_type)'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::re_detail::put_mem_block(void*)'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::regex_error::raise() const'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::re_detail::raise_runtime_error(std::runtime_error const&)'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::re_detail::raw_storage::resize(unsigned long)'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::re_detail::verify_options(unsigned int, boost::regex_constants::_match_flags)'
+/usr/local/lib/libykUTF.so: undefined reference to `boost::regex_error::~regex_error()'
+collect2: error: ld returned 1 exit status
+checked program was:
+/* begin */
+ 1: #include "ruby.h"
+ 2: 
+ 3: /*top*/
+ 4: extern int t(void);
+ 5: int main(int argc, char **argv)
+ 6: {
+ 7:   if (argc > 1000000) {
+ 8:     int (* volatile tp)(void)=(int (*)(void))&t;
+ 9:     printf("%d", (*tp)());
+10:   }
+11: 
+12:   return !!argv[argc];
+13: }
+14: 
+15: int t(void) { ; return 0; }
+/* end */
+
+--------------------
+
+have_library: checking for -lboost_regex... -------------------- yes
+
+"gcc -std=gnu99 -o conftest -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0/x86_64-linux -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0/ruby/backward -I/usr/local/share/rbenv/versions/2.7.1/include/ruby-2.7.0 -I. -I/usr/local/share/rbenv/versions/2.7.1/include    -O3 -ggdb3 -Wall -Wextra -Wdeprecated-declarations -Wimplicit-function-declaration -Wimplicit-int -Wpointer-arith -Wwrite-strings -Wmissing-noreturn -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wsuggest-attribute=format -Wsuggest-attribute=noreturn -Wunused-variable  -fPIC conftest.c  -L. -L/usr/local/share/rbenv/versions/2.7.1/lib -Wl,-rpath,/usr/local/share/rbenv/versions/2.7.1/lib -L/usr/local/lib -Wl,-rpath,/usr/local/lib -L. -L/usr/local/share/rbenv/versions/2.7.1/lib  -fstack-protector-strong -rdynamic -Wl,-export-dynamic    -lstdc++  -Wl,-rpath,/usr/local/share/rbenv/versions/2.7.1/lib -L/usr/local/share/rbenv/versions/2.7.1/lib -lruby -lboost_regex -lstdc++  -lm   -lc"
+checked program was:
+/* begin */
+ 1: #include "ruby.h"
+ 2: 
+ 3: /*top*/
+ 4: extern int t(void);
+ 5: int main(int argc, char **argv)
+ 6: {
+ 7:   if (argc > 1000000) {
+ 8:     int (* volatile tp)(void)=(int (*)(void))&t;
+ 9:     printf("%d", (*tp)());
+10:   }
+11: 
+12:   return !!argv[argc];
+13: }
+14: 
+15: int t(void) { ; return 0; }
+/* end */
+
+--------------------
+

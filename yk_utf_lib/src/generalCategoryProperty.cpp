@@ -1,4 +1,4 @@
-#include "../include/generalCategoryProperty.hpp"
+#include <Yk/utf/generalCategoryProperty.hpp>
 #include <vector>
 #include <algorithm>
 

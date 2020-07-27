@@ -1,4 +1,4 @@
-#include "../include/lowerCase.hpp"
+#include <Yk/utf/lowerCase.hpp>
 #include <vector>
 #include <algorithm>
 

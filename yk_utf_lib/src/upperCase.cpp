@@ -1,4 +1,4 @@
-#include "../include/upperCase.hpp"
+#include <Yk/utf/upperCase.hpp>
 #include <vector>
 #include <algorithm>
 
