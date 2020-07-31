@@ -2,7 +2,7 @@
 
 require 'Yk/TTYStr'
 
-s = IO.read("../../../build/test.txt")
+s = IO.read("test.txt")
 ts = Yk::TTYStr.new(s)
 p s
 i = 0
