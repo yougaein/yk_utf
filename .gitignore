@@ -8,3 +8,4 @@ CMakeCache.txt
 CMakeFiles/
 *.so.*
 .sitearchdir.*
+cmake_install.cmake 

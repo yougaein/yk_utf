@@ -89,7 +89,6 @@ char32_t nextCodePoint(const std::string& s, size_t *cursor)
                        |  (str[pos + 3] & 0x3F);
             pos += 4;
         }
-
     } else {
         code_point = 0xfffd;
         pos += 1;
@@ -103,18 +102,56 @@ char32_t nextCodePoint(const std::string& s, size_t *cursor)
 
 std::string TTYAttr::operator-(const TTYAttr& arg)const{
     std::vector<int> args;
-    if(fgColor != arg.fgColor && fgColor != -1)
+    if(_bold != arg._bold && !_bold){
+		args.push_back(0);
+		goto resume;
+	}
+    if(_doubleUnderline != arg._doubleUnderline && !_doubleUnderline){
+		args.push_back(0);
+		goto resume;
+	}
+	goto pass;
+resume:
+	{
+		if(fgColor != -1 && fgColor != colDefault)
+			args.push_back(fgColorArg + colDefault);
+		if(_bold)
+			args.push_back(boldArg + 0);
+		if(_blink)
+			args.push_back(blinkArg + 0);
+		if(_underline)
+			args.push_back(underlineArg + 0);
+		if(_italic)
+			args.push_back(italicArg + 0);
+		if(_shallow)
+			args.push_back(shallowArg + 0);
+		if(_fastBlink)
+			args.push_back(fastBlinkArg + 0);
+		if(_hide)
+			args.push_back(hideArg + 0);
+		if(_strike)
+			args.push_back(strikeArg + 0);
+		if(_doubleUnderline)
+			args.push_back(doubleUnderlineArg + 0);
+		goto skip;
+	}
+pass:
+	if(fgColor == colDefault && arg.fgColor != -1 && arg.fgColor != colDefault)
+		args.push_back(fgColorArg + colDefault);
+    else if(fgColor != arg.fgColor && fgColor != -1)
         args.push_back(fgColorArg + fgColor);
-    if(bgColor != arg.bgColor && bgColor != -1)
+	if(bgColor == colDefault && arg.bgColor != -1 && arg.bgColor != colDefault)
+		args.push_back(bgColorArg + colDefault);
+    else if(bgColor != arg.bgColor && bgColor != -1)
         args.push_back(bgColorArg + bgColor);
+    if(_bold != arg._bold && _bold)
+        args.push_back(boldArg + 0);
     if(_blink != arg._blink)
         args.push_back((!_blink ? cancelArg : 0) +  blinkArg);
     if(_underline != arg._underline)
         args.push_back((!_underline ? cancelArg : 0) +  underlineArg);
     if(_italic != arg._italic)
         args.push_back((!_italic ? cancelArg : 0) +  italicArg);
-    if(_bold != arg._bold)
-        args.push_back((!_bold ? cancelArg : 0) +  boldArg);
     if(_shallow != arg._shallow)
         args.push_back((!_shallow ? cancelArg : 0) +  shallowArg);
     if(_fastBlink != arg._fastBlink)
@@ -125,6 +162,9 @@ std::string TTYAttr::operator-(const TTYAttr& arg)const{
         args.push_back((!_strike ? cancelArg : 0) +  strikeArg);
     if(_reverse != arg._reverse)
         args.push_back((!_reverse ? cancelArg : 0) +  reverseArg);
+    if(_doubleUnderline != arg._doubleUnderline && _doubleUnderline)
+		args.push_back(doubleUnderlineArg + 0);
+skip:
     std::string ret("\x1b[");
     bool first = true;
     for(int n : args){
@@ -149,6 +189,7 @@ void TTYAttr::clear(){
     _shallow = false;
     _italic = false;
     _underline = false;
+    _doubleUnderline = false;
     _blink = false;
     _fastBlink = false;
     _reverse = false;
@@ -191,7 +232,7 @@ void TTYAttr::setArg(const std::vector<int>& args){
             _strike = true;
             break;
         case 21:
-            _bold = false;
+            _doubleUnderline = true;
             break;
         case 22:
             _shallow = false;
@@ -280,7 +321,7 @@ TTYAttr::TTYAttr(const std::vector<int>&& args) :
     fgColor(-1), bgColor(-1),
     _blink(false), _underline(false), _italic(false),
     _bold(false), _shallow(false), _fastBlink(false), 
-    _hide(false), _strike(false), _reverse(false)
+    _hide(false), _strike(false), _reverse(false), _doubleUnderline(false)
 
 {
     setArg(args);
@@ -291,7 +332,7 @@ TTYAttr::TTYAttr() :
     fgColor(-1), bgColor(-1),
     _blink(false), _underline(false), _italic(false),
     _bold(false), _shallow(false), _fastBlink(false), 
-    _hide(false), _strike(false), _reverse(false)
+    _hide(false), _strike(false), _reverse(false), _doubleUnderline(false)
 {
 }
 
@@ -300,12 +341,12 @@ TTYAttr::TTYAttr(int f, int b) :
     fgColor(f), bgColor(b),
     _blink(false), _underline(false), _italic(false),
     _bold(false), _shallow(false), _fastBlink(false), 
-    _hide(false), _strike(false), _reverse(false)
+    _hide(false), _strike(false), _reverse(false), _doubleUnderline(false)
 {
 }
 
 
-TTYAttr::TTYAttr(int f, int b, bool __blink, bool __underline, bool __italic, bool __bold, bool __shallow, bool __fastBlink, bool __hide, bool __strike, bool __reverse) : 
+TTYAttr::TTYAttr(int f, int b, bool __blink, bool __underline, bool __italic, bool __bold, bool __shallow, bool __fastBlink, bool __hide, bool __strike, bool __reverse, bool __doubleUnderline) : 
     fgColor(f), bgColor(b),
     _blink(__blink), _underline(__underline), _italic(__italic),
     _bold(__bold), _shallow(__shallow), _fastBlink(__fastBlink), 
@@ -318,7 +359,7 @@ TTYAttr::TTYAttr(const TTYAttr& arg) :
     fgColor(arg.fgColor), bgColor(arg.bgColor),
     _blink(arg._blink), _underline(arg._underline), _italic(arg._italic),
     _bold(arg._bold), _shallow(arg._shallow), _fastBlink(arg._fastBlink), 
-    _hide(arg._hide), _strike(arg._strike), _reverse(arg._reverse)
+    _hide(arg._hide), _strike(arg._strike), _reverse(arg._reverse), _doubleUnderline(arg._doubleUnderline)
 {
 }
 
@@ -343,6 +384,7 @@ TTYAttr::TTYAttr(unsigned int arg) {
     _reverse = (arg & i_reverse) ? 1 : 0;
     _hide = (arg & i_hide) ? 1 : 0;
     _strike = (arg & i_strike) ? 1 : 0;
+    _doubleUnderline = (arg & i_doubleUnderline) ? 1 : 0;
 }
 
 
@@ -351,6 +393,7 @@ TTYAttr& TTYAttr::operator=(const TTYAttr& arg){
     _blink = arg._blink; _underline = arg._underline; _italic = arg._italic;
     _bold = arg._bold; _shallow = arg._shallow; _fastBlink = arg._fastBlink; 
     _hide = arg._hide; _strike = arg._strike; _reverse = arg._reverse;
+	_doubleUnderline = arg._doubleUnderline;
     return *this;
 }
 
@@ -374,21 +417,23 @@ const TTYAttr TTYAttr::bgWhite(-1, colWhite);
 const TTYAttr TTYAttr::bgDefault(-1, colDefault);
 
 
-const TTYAttr TTYAttr::blink(-1, -1, true, false, false, false, false, false, false, false, false);
-const TTYAttr TTYAttr::underline(-1, -1, false, true, false, false, false, false, false, false, false);
-const TTYAttr TTYAttr::italic(-1, -1, false, false, true, false, false, false, false, false, false);
-const TTYAttr TTYAttr::bold(-1, -1, false, false, false, true, false, false, false, false, false);
-const TTYAttr TTYAttr::shallow(-1, -1, false, false, false, false, true, false, false, false, false);
-const TTYAttr TTYAttr::fastBlink(-1, -1, false, false, false, false, false, true, false, false, false);
-const TTYAttr TTYAttr::hide(-1, -1, false, false, false, false, false, false, true, false, false);
-const TTYAttr TTYAttr::strike(-1, -1, false, false, false, false, false, false, false, true, false);
-const TTYAttr TTYAttr::reverse(-1, -1, false, false, false, false, false, false, false, false, true);
+const TTYAttr TTYAttr::blink(-1, -1, true, false, false, false, false, false, false, false, false, false);
+const TTYAttr TTYAttr::underline(-1, -1, false, true, false, false, false, false, false, false, false, false);
+const TTYAttr TTYAttr::italic(-1, -1, false, false, true, false, false, false, false, false, false, false);
+const TTYAttr TTYAttr::bold(-1, -1, false, false, false, true, false, false, false, false, false, false);
+const TTYAttr TTYAttr::shallow(-1, -1, false, false, false, false, true, false, false, false, false, false);
+const TTYAttr TTYAttr::fastBlink(-1, -1, false, false, false, false, false, true, false, false, false, false);
+const TTYAttr TTYAttr::hide(-1, -1, false, false, false, false, false, false, true, false, false, false);
+const TTYAttr TTYAttr::strike(-1, -1, false, false, false, false, false, false, false, true, false, false);
+const TTYAttr TTYAttr::reverse(-1, -1, false, false, false, false, false, false, false, false, true, false);
+const TTYAttr TTYAttr::doubleUnderline(-1, -1, false, false, false, false, false, false, false, false, false, true);
 
 bool TTYAttr::operator!=(const TTYAttr& arg)const{
     return fgColor != arg.fgColor || bgColor != arg.bgColor ||
         _blink != arg._blink || _underline != arg._underline || _italic != arg._italic ||
         _bold != arg._bold || _shallow != arg._shallow || _fastBlink != arg._fastBlink ||
-        _hide != arg._hide || _strike != arg._strike || _reverse != arg._reverse;
+        _hide != arg._hide || _strike != arg._strike || _reverse != arg._reverse ||
+		_doubleUnderline != arg._doubleUnderline;
 }
 
 
@@ -396,7 +441,8 @@ bool TTYAttr::operator==(const TTYAttr& arg)const{
     return fgColor == arg.fgColor && bgColor == arg.bgColor &&
         _blink == arg._blink && _underline == arg._underline && _italic == arg._italic &&
         _bold == arg._bold && _shallow == arg._shallow && _fastBlink == arg._fastBlink &&
-        _hide == arg._hide && _strike == arg._strike && _reverse == arg._reverse;
+        _hide == arg._hide && _strike == arg._strike && _reverse == arg._reverse &&
+		_doubleUnderline == arg._doubleUnderline;
 }
 
 
@@ -420,14 +466,16 @@ TTYAttr TTYAttr::operator|(const TTYAttr& arg)const{
     ret._hide = _hide | arg._hide;
     ret._strike = _strike | arg._strike;
     ret._reverse = _reverse | arg._reverse;
+    ret._doubleUnderline = _doubleUnderline | arg._doubleUnderline;
     return ret;
 }
 
 
-void TTYStr::push(std::string s, TTYAttr a){
+void TTYStr::push(std::string s, TTYAttr a, size_t cpos){
     size_t cursor = 0;
-    while(s.size() > cursor)
-        elems.emplace_back(Elem(nextCodePoint(s, &cursor), a));
+    while(s.size() > cursor){
+        elems.emplace_back(Elem(nextCodePoint(s, &cursor), a, cpos));
+	}
 }
 
 
@@ -457,24 +505,41 @@ void TTYStr::put_utf8(std::string& s, char32_t codepoint){
 }
 
 
-std::string TTYStr::getStdStr(size_t paddingNum){
+void TTYStr::flush(std::string* outString, size_t paddingNum, std::vector<size_t>* cpPosList){
     TTYAttr bAttr;
-    std::string out;
+    std::string& out(*outString);
+	std::string eseq;
+	out.clear();
+	cpPosList->clear();
+	size_t curCPPos = -1;
     for(auto e : elems){
+		curCPPos = e.cpPos;
         if(e.attr != bAttr){
-            out += e.attr - bAttr;
+            eseq = e.attr - bAttr;
+			out += eseq;
+			for(size_t i = 0 ; i < eseq.size() ; ++i) //eseq should be ascii coded
+				cpPosList->push_back(curCPPos);
             put_utf8(out, e.cp);
+			cpPosList->push_back(curCPPos);
             bAttr = e.attr;
         }else{
             put_utf8(out, e.cp);
+			cpPosList->push_back(curCPPos);
         }
     }
-    if(TTYAttr() != bAttr)
-        out += TTYAttr() - bAttr;
-    for(size_t i = 0 ; i < paddingNum ; ++i)
+    if(TTYAttr() != bAttr){
+		eseq = TTYAttr(TTYAttr::colDefault, TTYAttr::colDefault) - bAttr;
+        out += eseq;
+		for(size_t i = 0 ; i < eseq.size() ; ++i) //eseq should be ascii coded
+			cpPosList->push_back(curCPPos);
+	}
+    for(size_t i = 0 ; i < paddingNum ; ++i){
         out += " ";
-    return out;
+		cpPosList->push_back(curCPPos);
+	}
+	clear();
 }
+
 
 
 std::basic_string<char32_t> UnicodeStr::to_U(std::string s){
@@ -648,7 +713,7 @@ struct TmpParams{
         prevCompatNormalizable(false), prevCannNormalizable(false), prevIsStartar(true), noLbpCheck(false),
         graphemeLength(0), lineBreakLength(0), cpCount(0), ccSeqLength(0),
         lastGbp(gbNil), lastLbp(lbNil), lastLbpX(lbNil), specialSP(lbNil) {}
-    void add(char32_t cp, size_t start, size_t bsz, const TTYAttr& attr, std::string alt = "", size_t altTTYSize = 0){
+    void add(char32_t cp, size_t cp_pos, size_t start, size_t bsz, const TTYAttr& attr, std::string alt = "", size_t altTTYSize = 0){
         GraphemeBreakProperty gbp = getGraphemeBreakProperty(cp);
         LineBreakProperty lbp = getLineBreakProperty(cp);
         size_t ccc = getCanonicalCombiningClass(cp);
@@ -755,7 +820,7 @@ struct TmpParams{
                 }
             }
         }
-        cpList.push_back(UnicodeStr::CPElem(cp, start, bsz, attr, alt, altTTYSize, graphemeLength));
+        cpList.push_back(UnicodeStr::CPElem(cp, cp_pos, start, bsz, attr, alt, altTTYSize, graphemeLength));
         if((lastIsExtPictExtend && gbp == gbExtend) || gbp == gbExtended_Pictographic)
             lastIsExtPictExtend = true;
         else
@@ -823,11 +888,13 @@ UnicodeStr::UnicodeStr(std::string s) :
     TTYAttr attr;
     size_t i = 0, ei;
     size_t prev_i;
+	size_t cp_pos_next = 0;
     while(true){
         if(i >=  orgStr.size())
             break;
         prev_i = i;
         char32_t cp = nextCodePoint(orgStr, &i);
+		++cp_pos_next;
         switch(cp){
         case 0x0a: //LF
         case 0x0d: //CR
@@ -839,6 +906,7 @@ UnicodeStr::UnicodeStr(std::string s) :
                 goto control_label;
             ei = i;
             cp = nextCodePoint(orgStr, &i);
+			++cp_pos_next;
             if(cp == '['){
                 if(i >=  orgStr.size()){
                     i = ei;
@@ -850,6 +918,7 @@ UnicodeStr::UnicodeStr(std::string s) :
                     int num = -1;
                     while(true){
                         cp = nextCodePoint(orgStr, &i);
+						++cp_pos_next;
                         if(cp == ';'){
                             if(num != -1){
                                 nums.push_back(num);
@@ -861,8 +930,10 @@ UnicodeStr::UnicodeStr(std::string s) :
                                 cp = 0x1b;
                                 goto control_label;
                             }
-                            if(cp == 'm')
+                            if(cp == 'm' && num != -1){
+								nums.push_back(num);
                                 attr.setArg(nums);
+							}
                             goto finish_esc;
                             break;
                         }else if(cp < '0' || '9' < cp){
@@ -900,7 +971,7 @@ control_label:
                 altStr[4] = '\0';
                 TTYAttr a(attr);
                 a._reverse = ~a._reverse;
-                t.add(cp, i, i - prev_i, a, altStr, 4);
+                t.add(cp, cp_pos_next - 1, i, i - prev_i, a, altStr, 4);
             }else if(cp == 0xfffd){
                 char altStr[8];
                 altStr[0] = '<';
@@ -913,10 +984,10 @@ control_label:
                 altStr[7] = '\0';
                 TTYAttr a(attr);
                 a._reverse = ~a._reverse;
-                t.add(cp, i, i - prev_i, a, altStr, 7);
+                t.add(cp, cp_pos_next - 1, i, i - prev_i, a, altStr, 7);
             }else{
 else_label:
-                t.add(cp, i, i - prev_i, attr);
+                t.add(cp, cp_pos_next - 1, i, i - prev_i, attr);
             }
         }
     }
@@ -924,7 +995,7 @@ else_label:
     //createNormalized();
 }
 
-
+/*
 size_t UnicodeStr::lineCount(size_t width, size_t tabSize)const{// f(const std::vector<terminal_str>& s)
 		if(width == 0 || tabSize == 0)
 				throw UnicodeStr::Error("width = 0 or tab size = 0");
@@ -1001,7 +1072,7 @@ size_t UnicodeStr::lineCount(size_t width, size_t tabSize)const{// f(const std::
 				++lc;
 		return lc;
 }
-
+*/
 
 }
 }

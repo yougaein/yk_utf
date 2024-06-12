@@ -114,7 +114,11 @@ public:
    }
    std::string error_string(boost::regex_constants::error_type n) const
    {
+#ifdef BOOST_REGEX_DETAIL_NS
+      return boost::BOOST_REGEX_DETAIL_NS::get_default_error_string(n);
+#else
       return boost::re_detail::get_default_error_string(n);
+#endif
    }
 
    //
@@ -130,9 +134,6 @@ public:
    //
    static std::string& get_catalog_name_inst();*/
 
-#ifdef BOOST_HAS_THREADS
-   static boost::static_mutex& get_mutex_inst();
-#endif
 };
 
 using Regex = boost::basic_regex<char32_t, boost_regex_traits<char32_t>>;

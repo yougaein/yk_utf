@@ -1,2 +1,13 @@
 /usr/local/lib/libykUTF.so.0.1.0
 /usr/local/lib/libykUTF.so
+/usr/local/include/Yk/utf/canonicalCombiningClass.hpp
+/usr/local/include/Yk/utf/generalCategoryProperty.hpp
+/usr/local/include/Yk/utf/lowerCase.hpp
+/usr/local/include/Yk/utf/unicodeStr.hpp
+/usr/local/include/Yk/utf/cType.hpp
+/usr/local/include/Yk/utf/graphemeProperty.hpp
+/usr/local/include/Yk/utf/regex_utf.hpp
+/usr/local/include/Yk/utf/upperCase.hpp
+/usr/local/include/Yk/utf/decompData.hpp
+/usr/local/include/Yk/utf/lineBreakProperty.hpp
+/usr/local/include/Yk/utf/ttyWidth.hpp

@@ -37,18 +37,25 @@ static VALUE ttyStr_init(VALUE self, VALUE arg){
     return self;
 }
 
-static VALUE ttyStr_height(VALUE self, VALUE width, VALUE tab){
+/*static VALUE ttyStr_height(VALUE self, VALUE width, VALUE tab){
 	Yk::UTF::UnicodeStr* p = ttyStr(self);
     Check_Type(width, T_FIXNUM);
     Check_Type(tab, T_FIXNUM);
     size_t res = p->lineCount(FIX2INT(width), FIX2INT(tab));
     return INT2FIX(res);
+}*/
+
+
+static VALUE cp_width(VALUE self, VALUE cp){
+	Check_Type(cp, T_FIXNUM);
+	size_t res = Yk::UTF::getTTYWidth(FIX2INT(cp));
+	return INT2FIX(res);
 }
 
 
 struct Func_for_ttyStr_each_line{
-    void operator()(std::string s){
-        rb_yield(rb_str_new(s.c_str(), s.size()));
+    void operator()(const std::string& s, size_t padd_len, const std::vector<size_t>& cpPosList)const{
+        rb_yield(rb_ary_new3(3, rb_str_new(s.c_str(), s.size()), INT2FIX(padd_len),  rb_str_new((const char*)&cpPosList[0], cpPosList.size() * (sizeof(size_t) / sizeof(s[0])))));
     }
 };
 
@@ -76,8 +83,9 @@ extern "C" void Init_TTYStr(void){
     rb_mYk = rb_define_module("Yk");
 	VALUE cTTYStr = rb_define_class_under(rb_mYk, "TTYStr", rb_cObject);
 	rb_define_alloc_func(cTTYStr, ttyStr_alloc);
+	rb_define_singleton_method(cTTYStr, "ttyWidth", RUBY_METHOD_FUNC(cp_width), 1);
 	rb_define_method(cTTYStr, "initialize", RUBY_METHOD_FUNC(ttyStr_init), 1);
-	rb_define_method(cTTYStr, "height", RUBY_METHOD_FUNC(ttyStr_height), 2);
+//	rb_define_method(cTTYStr, "height", RUBY_METHOD_FUNC(ttyStr_height), 2);
 	rb_define_method(cTTYStr, "each_line", RUBY_METHOD_FUNC(ttyStr_each_line), 4);
     rb_define_method(cTTYStr, "has_match", RUBY_METHOD_FUNC(ttyStr_has_match), 1);
     rb_define_const(cTTYStr, "FgBlack", INT2FIX(Yk::UTF::TTYAttr::i_fgBlack));
